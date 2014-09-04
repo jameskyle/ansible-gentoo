@@ -1,0 +1,96 @@
+- stat: path=/tmp/gentoo_mounted
+  register: gentoo_is_mounted
+  tags:
+    - storage
+
+- stat: path=/tmp/boot_mounted
+  register: boot_is_mounted
+  tags:
+    - storage
+
+- stat: path=/tmp/parted_is_done
+  register: parted_is_done
+  tags:
+    - storage
+
+- name: Make Partition Labels
+  command: "parted -s {{ main_disk }} mklabel gpt"
+  when: parted_is_done.stat.exists == False
+  tags:
+    - storage
+
+- name: Create Grub BIOS Partition
+  command: "parted -s {{ main_disk }} -- mkpart primary ext2 1 100"
+  when: parted_is_done.stat.exists == False
+  tags:
+    - storage
+  
+- name: Set Grub BIOS
+  command: "parted -s {{ main_disk }} -- set 1 bios_grub on"
+  when: parted_is_done.stat.exists == False
+  tags:
+    - storage
+
+- name: Create Boot Partition
+  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 101 613"
+  when: parted_is_done.stat.exists == False
+  tags:
+    - storage
+
+- name: Format Boot Partition
+  filesystem: "fstype={{ fstype }} dev={{ main_disk }}2 force={{ force_format }}"
+  tags:
+    - storage
+
+- name: Create Main Physical Disk
+  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 614 -1"
+  when: parted_is_done.stat.exists == False
+  tags:
+    - storage
+
+- command: touch /tmp/parted_is_done
+
+- name: Create Main Volume Group
+  lvg: "pvs={{ main_disk }}3 vg=main"
+  tags:
+    - storage
+
+- name: Create Swap Volume
+  lvol: "lv=swap vg=main size={{ swap_size }}"
+  tags:
+    - storage
+
+- name: Rescan Volumes
+  command: vgscan
+
+- name: Update device mapper
+  command: vgchange -ay
+
+- name: Format Swap Volume
+  command: "mkswap /dev/mapper/main-swap"
+
+- name: Create root Volume
+  lvol: lv=root vg=main size=100%FREE
+  tags:
+    - storage
+
+- name: Format root Volume
+  filesystem: "fstype={{ fstype }} dev=/dev/mapper/main-root force={{ force_format }}"
+
+- name: create root mount
+  command: "{{item}} creates=/tmp/gentoo_mounted"
+  with_items:
+      - mkdir -p /mnt/gentoo
+      - mount /dev/mapper/main-root /mnt/gentoo 
+      - touch /tmp/gentoo_mounted 
+  tags:
+    - storage
+
+- name: create boot mount
+  command: "{{item}} creates=/tmp/boot_mounted"
+  with_items: 
+      - mkdir -p /mnt/gentoo/boot 
+      - mount {{ main_disk }}2 /mnt/gentoo/boot 
+      - touch /tmp/boot_mounted
+  tags:
+    - storage

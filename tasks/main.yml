@@ -1,0 +1,18 @@
+---
+# tasks file for ansible-gentoo
+- name: Deploy User's Authorized Key to Root
+  authorized_key: user=root key="{{ lookup('file', pubkey) }}"
+
+- include: storage.yml
+
+- stat: path=/tmp/filesystem_completed
+  register: filesystem_completed
+
+- include: filesystem.yml
+  when: filesystem_completed.stat.exists == False
+
+- include: kernel.yml
+- include: networking.yml
+- include: system.yml
+- include: packages.yml
+- include: reboot.yml

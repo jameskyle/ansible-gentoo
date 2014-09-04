@@ -1,0 +1,11 @@
+- name: Remove Gentoo Kernel Sources
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; emerge --depclean gentoo-sources'
+
+- name: Remove Portage Tree
+  command: rm -rf /mnt/gentoo/usr/portage/* 
+
+- name: Clean Caches
+  command: rm -rf /mnt/gentoo/var/cache/*
+
+- name: Clean Temporary Files
+  command: rm -rf /mnt/gentoo/tmp/* /mnt/gentoo/var/tmp/*

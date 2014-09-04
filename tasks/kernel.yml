@@ -1,0 +1,40 @@
+- name: Emerge Gentoo Sources
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; emerge gentoo-sources' creates=/mnt/gentoo/usr/src/linux/arch
+  tags:
+    - kernel
+
+- name: eselect profile
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; eselect profile set 1'
+  tags:
+    - chroot
+
+- name: Copy Kernel Config
+  copy: src=kernels/{{ kernel }} dest=/mnt/gentoo/usr/src/linux/.config
+  tags:
+    - kernel
+
+- name: Make OldConfig
+  command: chroot /mnt/gentoo/ bash -c 'source /etc/profile;cd /usr/src/linux;make oldconfig'
+  tags:
+    - kernel
+
+- name: Make Kernel
+  command: chroot /mnt/gentoo/ bash -c 'source /etc/profile; cd /usr/src/linux; make {{ make_opts }}'
+  tags:
+    - kernel
+
+- name: Make Module Install
+  command: chroot /mnt/gentoo/ bash -c 'source /etc/profile; cd /usr/src/linux; make modules_install'
+  tags:
+    - kernel
+
+- name: Make Install
+  command: chroot /mnt/gentoo/ bash -c 'source /etc/profile; cd /usr/src/linux; make install'
+  tags:
+    - kernel
+
+- name: Install Genkernel
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; emerge genkernel' creates=/mnt/gentoo/usr/bin/genkernel
+
+- name: Install Initramfs
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; genkernel --lvm --install initramfs'

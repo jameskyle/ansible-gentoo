@@ -94,4 +94,4 @@ James A. Kyle
 james@jameskyle.org  
 http://blog.jameskyle.org
 
-.. _`blog post`: http://blog.jameskyle.org
+.. _`blog post`: http://blog.jameskyle.org/2014/08/automated-stage3-gentoo-install-using-ansible/

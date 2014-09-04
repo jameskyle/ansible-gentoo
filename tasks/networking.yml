@@ -1,0 +1,20 @@
+- name: Management Interface Configuration
+  command: chroot /mnt/gentoo bash -c "cd /etc/init.d; ln -s net.lo net.{{ management_interface }}" creates=/mnt/gentoo/etc/init.d/net.{{ management_interface }}
+  
+- name: Configure Default Interface
+  template: src=net dest=/mnt/gentoo/etc/conf.d/net
+
+- name: Add Interface Default Run Configuration. 
+  command: chroot /mnt/gentoo bash -c 'rc-update add net.{{ management_interface }} default'
+
+- name: Add SSHD to Default Run Configuration.
+  command: chroot /mnt/gentoo bash -c 'rc-update add sshd default'
+
+
+- name: Create root .ssh Directory
+  command: mkdir -p /mnt/gentoo/root/.ssh && chmod 700 /mnt/gentoo/root/.ssh && chmod 700 /mnt/gentoo/root/.ssh
+
+- name: Configure Root Authorized Key
+  authorized_key: user=root
+                  key="{{ lookup('file', pubkey) }}"
+                  path="/mnt/gentoo/root/.ssh/authorized_keys"

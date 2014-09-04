@@ -1,0 +1,69 @@
+- name: Copy Over Stage Retrieval Script
+  template: src=get_stage.sh dest=/mnt/gentoo/ mode=755
+
+- name: Download Stage3 Tarball
+  command: /mnt/gentoo/get_stage.sh chdir=/mnt/gentoo
+  tags:
+    - filesystem
+
+- name: Unarchive Stage3 Tarball
+  command: tar xjpf stage3.tbz2
+  args:
+      creates: /mnt/gentoo/etc
+      chdir: /mnt/gentoo/
+  tags:
+    - filesystem
+
+- name: proc bind mounts
+  command: mount -t proc proc /mnt/gentoo/proc creates=/mnt/gentoo/proc/zoneinfo
+  tags:
+    - filesystem
+
+- name: dev bind mounts
+  command: mount --rbind /dev /mnt/gentoo/dev creates=/mnt/gentoo/dev/zero
+  tags:
+    - filesystem
+
+- name: sys bind mounts
+  command: mount --rbind /sys /mnt/gentoo/sys creates=/mnt/gentoo/sys/dev
+  tags:
+    - filesystem
+
+- name: Cleanup Stage3 Archive
+  file: path=/mnt/gentoo/stage3.tbz2 state=absent
+
+- name: Cleanup get_stage.sh
+  file: path=/mnt/gentoo/get_stage.sh state=absent
+
+- name: copy resolv.conf
+  command: cp -L /etc/resolv.conf /mnt/gentoo/etc/ creates=/mnt/gentoo/etc/resolv.conf
+
+- name: create portage directory
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; mkdir /usr/portage' creates=/mnt/gentoo/usr/portage
+  tags:
+    - chroot
+
+- name: emerge-webrsync
+  command: chroot /mnt/gentoo bash -c 'source /etc/profile; /usr/bin/emerge-webrsync' creates=/mnt/gentoo/usr/portage/xfce-extra
+  tags:
+    - chroot
+
+- name: set zoneinfo
+  command: chroot /mnt/gentoo bash -c 'cp /usr/share/zoneinfo/{{ timezone }} /etc/localtime; echo "{{ timezone }}" > /etc/timezone'
+  tags:
+    - chroot
+
+- name: Configure Hosts File
+  template: src=hosts dest=/mnt/gentoo/etc/hosts
+
+- name: Set Hostname
+  template: src=hostname dest=/mnt/gentoo/etc/conf.d/hostname
+
+
+- name: Configure Fstab
+  copy: src=fstab dest=/mnt/gentoo/etc/fstab
+
+- name: Create Make.conf
+  copy: src=make.conf dest=/mnt/gentoo/etc/portage/make.conf
+
+- command: touch /tmp/filesystem_completed

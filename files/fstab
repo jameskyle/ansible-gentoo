@@ -1,0 +1,3 @@
+/dev/sda2             /boot     ext4    noauto,noatime     1 2
+/dev/mapper/main-swap none      swap    sw                 0 0
+/dev/mapper/main-root /         ext4    noatime            0 1

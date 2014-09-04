@@ -1,0 +1,16 @@
+---
+# defaults file for ansible-gentoo
+pubkey: ~/.ssh/id_rsa.pub
+main_disk: /dev/sda
+swap_size: 2048m
+fstype: ext4
+force_format: no
+mirror: http://mirror.mcs.anl.gov/pub/gentoo 
+timezone: America/Los_Angeles
+domain: met.tfoundry.com
+kernel: config-3.13.0-24-generic
+make_opts: -j4
+management_interface: "{{ ansible_default_ipv4.interface }}"
+root_passwd: gentoo-root
+gateway: "{{ ansible_default_ipv4.gateway }}"
+netmask: "{{ ansible_default_ipv4.netmask }}"

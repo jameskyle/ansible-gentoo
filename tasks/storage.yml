@@ -10,8 +10,13 @@
     - storage
 
 - name: Create Grub BIOS Partition
-  command: "parted -s {{ main_disk }} -- mkpart primary ext2 1 100"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 1
+    part_end: 1MiB
+    flags: [ bios_grub ]
+    state: present
   tags:
     - storage
   
@@ -22,8 +27,13 @@
     - storage
 
 - name: Create Boot Partition
-  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 101 613"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 2
+    part_start: 1MiB
+    part_end: 150MiB
+    state: present
   tags:
     - storage
 
@@ -33,8 +43,13 @@
     - storage
 
 - name: Create Main Physical Disk
-  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 614 -1"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 3
+    part_start: 150MiB
+    flags: [ LVM ]
+    state: present
   tags:
     - storage
 

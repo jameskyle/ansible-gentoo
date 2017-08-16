@@ -1,13 +1,3 @@
-- stat: path=/tmp/gentoo_mounted
-  register: gentoo_is_mounted
-  tags:
-    - storage
-
-- stat: path=/tmp/boot_mounted
-  register: boot_is_mounted
-  tags:
-    - storage
-
 - stat: path=/tmp/parted_is_done
   register: parted_is_done
   tags:

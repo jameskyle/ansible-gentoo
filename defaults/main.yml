@@ -2,6 +2,7 @@
 # defaults file for ansible-gentoo
 pubkey: ~/.ssh/id_rsa.pub
 main_disk: /dev/sda
+root_size: 95%FREE
 swap_size: 2048m
 fstype: ext4
 force_format: no

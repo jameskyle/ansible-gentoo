@@ -75,7 +75,7 @@
   command: "mkswap /dev/mapper/main-swap"
 
 - name: Create root Volume
-  lvol: lv=root vg=main size=100%FREE
+  lvol: "lv=root vg=main size={{ root_size }}"
   tags:
     - storage
 

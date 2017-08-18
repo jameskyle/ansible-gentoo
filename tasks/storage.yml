@@ -25,12 +25,6 @@
   tags:
     - storage
   
-- name: Set Grub BIOS
-  command: "parted -s {{ main_disk }} -- set 1 bios_grub on"
-  when: parted_is_done.stat.exists == False
-  tags:
-    - storage
-
 - name: Create Boot Partition
   when: parted_is_done.stat.exists == False
   parted:

@@ -66,12 +66,6 @@
   tags:
     - storage
 
-- name: Rescan Volumes
-  command: vgscan
-
-- name: Update device mapper
-  command: vgchange -ay
-
 - name: Format Swap Volume
   command: "mkswap /dev/mapper/{{ vg_name }}-swap"
 

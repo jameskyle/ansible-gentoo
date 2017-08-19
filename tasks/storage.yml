@@ -77,20 +77,29 @@
 - name: Format root Volume
   filesystem: "fstype={{ fstype }} dev=/dev/mapper/{{ vg_name }}-root force={{ force_format }}"
 
-- name: create root mount
-  command: "{{item}} creates=/tmp/gentoo_mounted"
-  with_items:
-      - mkdir -p /mnt/gentoo
-      - mount /dev/mapper/{{ vg_name }}-root /mnt/gentoo 
-      - touch /tmp/gentoo_mounted 
+- name: Create mountpoints
+  file:
+    path: /mnt/gentoo/boot
+    state: directory
   tags:
     - storage
 
-- name: create boot mount
-  command: "{{item}} creates=/tmp/boot_mounted"
-  with_items: 
-      - mkdir -p /mnt/gentoo/boot 
-      - mount {{ main_disk }}2 /mnt/gentoo/boot 
-      - touch /tmp/boot_mounted
+- name: Mount root
+  mount:
+    path: /mnt/gentoo
+    src: /dev/mapper/{{ vg_name }}-root
+    fstab: /tmp/tmp_fstab
+    fstype: "{{ fstype }}"
+    state: mounted
+  tags:
+    - storage
+
+- name: Mount boot
+  mount:
+    path: /mnt/gentoo/boot
+    src: "{{ main_disk }}2"
+    fstab: /tmp/tmp_fstab
+    fstype: "{{ fstype }}"
+    state: mounted
   tags:
     - storage

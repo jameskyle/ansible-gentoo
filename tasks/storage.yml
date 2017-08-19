@@ -55,6 +55,8 @@
 - file:
     path: /tmp/parted_is_done
     state: touch
+  tags:
+    - storage
 
 - name: Create Main Volume Group
   lvg: "pvs={{ main_disk }}3 vg={{ vg_name }}"

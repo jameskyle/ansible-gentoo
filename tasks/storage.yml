@@ -70,6 +70,8 @@
 
 - name: Format Swap Volume
   command: "mkswap /dev/mapper/{{ vg_name }}-swap"
+  tags:
+    - storage
 
 - name: Create root Volume
   lvol: "lv=root vg={{ vg_name }} size={{ root_size }}"
@@ -78,6 +80,8 @@
 
 - name: Format root Volume
   filesystem: "fstype={{ fstype }} dev=/dev/mapper/{{ vg_name }}-root force={{ force_format }}"
+  tags:
+    - storage
 
 - name: Create mountpoints
   file:

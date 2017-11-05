@@ -1,18 +1,13 @@
-- stat: path=/tmp/gentoo_mounted
-  register: gentoo_is_mounted
-  tags:
-    - storage
-
-- stat: path=/tmp/boot_mounted
-  register: boot_is_mounted
-  tags:
-    - storage
-
 - stat: path=/tmp/parted_is_done
   register: parted_is_done
   tags:
     - storage
 
+#TODO: port to module parted when issues will be fixed
+# https://github.com/ansible/ansible/issues/26905
+# https://github.com/ansible/ansible/issues/23914
+# https://github.com/ansible/ansible/issues/27841
+# https://github.com/ansible/ansible/issues/26890
 - name: Make Partition Labels
   command: "parted -s {{ main_disk }} mklabel gpt"
   when: parted_is_done.stat.exists == False
@@ -20,20 +15,24 @@
     - storage
 
 - name: Create Grub BIOS Partition
-  command: "parted -s {{ main_disk }} -- mkpart primary ext2 1 100"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 1
+    part_end: 1MiB
+    flags: [ bios_grub ]
+    state: present
   tags:
     - storage
   
-- name: Set Grub BIOS
-  command: "parted -s {{ main_disk }} -- set 1 bios_grub on"
-  when: parted_is_done.stat.exists == False
-  tags:
-    - storage
-
 - name: Create Boot Partition
-  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 101 613"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 2
+    part_start: 1MiB
+    part_end: 150MiB
+    state: present
   tags:
     - storage
 
@@ -43,54 +42,70 @@
     - storage
 
 - name: Create Main Physical Disk
-  command: "parted -s {{ main_disk }} -- mkpart primary {{ fstype }} 614 -1"
   when: parted_is_done.stat.exists == False
+  parted:
+    device: "{{ main_disk }}"
+    number: 3
+    part_start: 150MiB
+    flags: [ LVM ]
+    state: present
   tags:
     - storage
 
-- command: touch /tmp/parted_is_done
+- file:
+    path: /tmp/parted_is_done
+    state: touch
+  tags:
+    - storage
 
 - name: Create Main Volume Group
-  lvg: "pvs={{ main_disk }}3 vg=main"
+  lvg: "pvs={{ main_disk }}3 vg={{ vg_name }}"
   tags:
     - storage
 
 - name: Create Swap Volume
-  lvol: "lv=swap vg=main size={{ swap_size }}"
+  lvol: "lv=swap vg={{ vg_name }} size={{ swap_size }}"
   tags:
     - storage
 
-- name: Rescan Volumes
-  command: vgscan
-
-- name: Update device mapper
-  command: vgchange -ay
-
 - name: Format Swap Volume
-  command: "mkswap /dev/mapper/main-swap"
+  command: "mkswap /dev/mapper/{{ vg_name }}-swap"
+  tags:
+    - storage
 
 - name: Create root Volume
-  lvol: lv=root vg=main size=100%FREE
+  lvol: "lv=root vg={{ vg_name }} size={{ root_size }}"
   tags:
     - storage
 
 - name: Format root Volume
-  filesystem: "fstype={{ fstype }} dev=/dev/mapper/main-root force={{ force_format }}"
-
-- name: create root mount
-  command: "{{item}} creates=/tmp/gentoo_mounted"
-  with_items:
-      - mkdir -p /mnt/gentoo
-      - mount /dev/mapper/main-root /mnt/gentoo 
-      - touch /tmp/gentoo_mounted 
+  filesystem: "fstype={{ fstype }} dev=/dev/mapper/{{ vg_name }}-root force={{ force_format }}"
   tags:
     - storage
 
-- name: create boot mount
-  command: "{{item}} creates=/tmp/boot_mounted"
-  with_items: 
-      - mkdir -p /mnt/gentoo/boot 
-      - mount {{ main_disk }}2 /mnt/gentoo/boot 
-      - touch /tmp/boot_mounted
+- name: Create mountpoints
+  file:
+    path: /mnt/gentoo/boot
+    state: directory
+  tags:
+    - storage
+
+- name: Mount root
+  mount:
+    path: /mnt/gentoo
+    src: /dev/mapper/{{ vg_name }}-root
+    fstab: /tmp/tmp_fstab
+    fstype: "{{ fstype }}"
+    state: mounted
+  tags:
+    - storage
+
+- name: Mount boot
+  mount:
+    path: /mnt/gentoo/boot
+    src: "{{ main_disk }}2"
+    fstab: /tmp/tmp_fstab
+    fstype: "{{ fstype }}"
+    state: mounted
   tags:
     - storage
